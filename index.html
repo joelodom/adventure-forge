@@ -2,92 +2,107 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Adventure Forge (MVP)</title>
-  <style>
-    body { font-family: sans-serif; margin: 1rem auto; max-width: 600px; background: #f0f0f0; }
-    #chat { background: #fff; border: 1px solid #ccc; padding: 1rem; height: 60vh; overflow-y: auto; }
-    .msg.user { text-align: right; color: #114488; margin-bottom: 0.5rem; }
-    .msg.gm   { text-align: left;  color: #228822; margin-bottom: 0.5rem; }
-    #inputArea { display: flex; margin-top: 1rem; }
-    #userInput { flex: 1; padding: 0.5rem; font-size: 1rem; }
-    #sendBtn { padding: 0.5rem 1rem; font-size: 1rem; }
-  </style>
-</head>
-<body>
-
-  <h1>Adventure Forge (MVP)</h1>
-  <div id="chat"></div>
-
-  <div id="inputArea">
-    <input type="text" id="userInput" placeholder="Type your action…" />
-    <button id="sendBtn">Send</button>
-  </div>
-
+  <title>API Gateway Test Page</title>
   <script>
-    // REPLACE this with your actual API Gateway invoke URL (no trailing slash):
-    const API_BASE = "https://abcd1234.execute-api.us-east-1.amazonaws.com";
+    // ─────────── CONFIGURE THIS ───────────
+    // Replace with your actual API Gateway invoke URL (no trailing slash):
+    const API_BASE = "https://YOUR_API_ID.execute-api.YOUR_REGION.amazonaws.com";
+    // ─────────────────────────────────────
 
-    let sessionId = null;
-    const chatDiv   = document.getElementById("chat");
-    const inputEl   = document.getElementById("userInput");
-    const sendBtn   = document.getElementById("sendBtn");
-
-    function appendMessage(who, text) {
-      const d = document.createElement("div");
-      d.className = "msg " + (who === "user" ? "user" : "gm");
-      d.innerText = (who === "user" ? "You: " : "GM: ") + text;
-      chatDiv.appendChild(d);
-      chatDiv.scrollTop = chatDiv.scrollHeight;
-    }
-
-    async function postJSON(path, body) {
-      const res = await fetch(API_BASE + path, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Unknown Error");
-      }
-      return res.json();
-    }
-
-    window.addEventListener("load", async () => {
-      const genre = prompt("What style of adventure? e.g. 'high fantasy', 'space opera'");
+    async function startSession() {
+      const genre = document.getElementById("genre").value.trim();
       if (!genre) {
-        appendMessage("gm", "No genre given. Cannot start.");
+        alert("Please enter a genre.");
         return;
       }
       try {
-        const data = await postJSON("/start", { genre });
-        sessionId = data.sessionId;
-        appendMessage("gm", data.gmReply);
-      } catch (e) {
-        appendMessage("gm", "[Error starting session: " + e.message + "]");
-      }
-    });
-
-    sendBtn.addEventListener("click", async () => {
-      const text = inputEl.value.trim();
-      if (!text || !sessionId) return;
-      appendMessage("user", text);
-      inputEl.value = "";
-      try {
-        const data = await postJSON("/message", {
-          sessionId: sessionId,
-          userMessage: text
+        const res = await fetch(`${API_BASE}/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ genre })
         });
-        appendMessage("gm", data.gmReply);
-      } catch (e) {
-        appendMessage("gm", "[Error: " + e.message + "]");
+        const data = await res.json();
+        document.getElementById("startResult").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("startResult").textContent = "[Error] " + err.message;
       }
-    });
+    }
 
-    inputEl.addEventListener("keydown", (evt) => {
-      if (evt.key === "Enter") sendBtn.click();
-    });
+    async function sendMessage() {
+      const sessionId = document.getElementById("sessionId").value.trim();
+      const userMessage = document.getElementById("userMessage").value.trim();
+      if (!sessionId || !userMessage) {
+        alert("Please enter both Session ID and Message.");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, userMessage })
+        });
+        const data = await res.json();
+        document.getElementById("messageResult").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("messageResult").textContent = "[Error] " + err.message;
+      }
+    }
   </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #fafafa;
+      color: #333;
+    }
+    h1 { text-align: center; }
+    .section {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 4px;
+    }
+    input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: calcul​ate(100% - 1rem);
+      margin-bottom: 0.5rem;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 0.5rem;
+      overflow-x: auto;
+      max-height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 API Gateway Smoke Test</h1>
+
+  <div class="section">
+    <h2>1. Start New Session</h2>
+    <label for="genre">Genre:</label><br />
+    <input id="genre" placeholder="e.g. high fantasy, space opera" /><br />
+    <button onclick="startSession()">Start Session</button>
+    <pre id="startResult"></pre>
+  </div>
+
+  <div class="section">
+    <h2>2. Send Message to GM</h2>
+    <label for="sessionId">Session ID:</label><br />
+    <input id="sessionId" placeholder="Paste sessionId from above" /><br />
+    <label for="userMessage">Your Message:</label><br />
+    <input id="userMessage" placeholder="e.g. I draw my sword" /><br />
+    <button onclick="sendMessage()">Send Message</button>
+    <pre id="messageResult"></pre>
+  </div>
 </body>
 </html>
