@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Adventure Forge (MVP)</title>
+  <style>
+    body { font-family: sans-serif; margin: 1rem auto; max-width: 600px; background: #f0f0f0; }
+    #chat { background: #fff; border: 1px solid #ccc; padding: 1rem; height: 60vh; overflow-y: auto; }
+    .msg.user { text-align: right; color: #114488; margin-bottom: 0.5rem; }
+    .msg.gm   { text-align: left;  color: #228822; margin-bottom: 0.5rem; }
+    #inputArea { display: flex; margin-top: 1rem; }
+    #userInput { flex: 1; padding: 0.5rem; font-size: 1rem; }
+    #sendBtn { padding: 0.5rem 1rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+
+  <h1>Adventure Forge (MVP)</h1>
+  <div id="chat"></div>
+
+  <div id="inputArea">
+    <input type="text" id="userInput" placeholder="Type your action…" />
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    // REPLACE this with your actual API Gateway invoke URL (no trailing slash):
+    const API_BASE = "https://abcd1234.execute-api.us-east-1.amazonaws.com";
+
+    let sessionId = null;
+    const chatDiv   = document.getElementById("chat");
+    const inputEl   = document.getElementById("userInput");
+    const sendBtn   = document.getElementById("sendBtn");
+
+    function appendMessage(who, text) {
+      const d = document.createElement("div");
+      d.className = "msg " + (who === "user" ? "user" : "gm");
+      d.innerText = (who === "user" ? "You: " : "GM: ") + text;
+      chatDiv.appendChild(d);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function postJSON(path, body) {
+      const res = await fetch(API_BASE + path, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Unknown Error");
+      }
+      return res.json();
+    }
+
+    window.addEventListener("load", async () => {
+      const genre = prompt("What style of adventure? e.g. 'high fantasy', 'space opera'");
+      if (!genre) {
+        appendMessage("gm", "No genre given. Cannot start.");
+        return;
+      }
+      try {
+        const data = await postJSON("/start", { genre });
+        sessionId = data.sessionId;
+        appendMessage("gm", data.gmReply);
+      } catch (e) {
+        appendMessage("gm", "[Error starting session: " + e.message + "]");
+      }
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      const text = inputEl.value.trim();
+      if (!text || !sessionId) return;
+      appendMessage("user", text);
+      inputEl.value = "";
+      try {
+        const data = await postJSON("/message", {
+          sessionId: sessionId,
+          userMessage: text
+        });
+        appendMessage("gm", data.gmReply);
+      } catch (e) {
+        appendMessage("gm", "[Error: " + e.message + "]");
+      }
+    });
+
+    inputEl.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") sendBtn.click();
+    });
+  </script>
+</body>
+</html>
