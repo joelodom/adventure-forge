@@ -1,0 +1,28 @@
+# ───────────────────────────────────────────────────────────────
+# .env.template
+#
+# 🚀 Copy this file to “.env” and replace each placeholder
+#    with your actual credentials before running the app.
+# ───────────────────────────────────────────────────────────────
+
+# OpenAI API Key
+# Obtain from https://platform.openai.com/account/api-keys
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+# MongoDB Atlas connection URI
+# Format: mongodb+srv://USERNAME:PASSWORD@CLUSTER_ID.mongodb.net
+# Example: mongodb+srv://af_user:MyP@ssw0rd@cluster0.mongodb.net
+MONGODB_URI=YOUR_MONGODB_URI_HERE
+
+# MongoDB database name
+# This is the database you created in Atlas for Adventure Forge
+DB_NAME=adventureforge_db
+
+# MongoDB collection name
+# Default collection to store sessions
+COLLECTION_NAME=sessions
+
+# ───────────────────────────────────────────────────────────────
+# After filling in, ensure this file is in your .gitignore
+# so you don’t accidentally commit secrets.
+# ───────────────────────────────────────────────────────────────
